@@ -1,26 +1,21 @@
 from flask import Flask, request, jsonify
-import undetected_chromedriver.v2 as uc
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
 def fetch_html(url):
-    options = Options()
-    options.add_argument("--headless")  # Run in headless mode
-    options.add_argument("--disable-gpu")  # Disable GPU for better performance
-    options.add_argument("--no-sandbox")  # Bypass sandbox for cloud platforms
+    try:
+        # Send a GET request to the URL
+        response = requests.get(url)
+        response.raise_for_status()  # Will raise an HTTPError for bad responses
 
-    # Use the undetected-chromedriver to bypass bot protection
-    driver = uc.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.get(url)
+        # Parse the HTML content with BeautifulSoup
+        soup = BeautifulSoup(response.content, 'html.parser')
+        return soup.prettify()  # Return the formatted HTML
 
-    # Get the HTML content after the page has loaded
-    html_content = driver.page_source
-    driver.quit()
-    return html_content
+    except requests.exceptions.RequestException as e:
+        return str(e)
 
 @app.route('/fetch', methods=['POST'])
 def fetch():
